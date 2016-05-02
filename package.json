@@ -1,0 +1,23 @@
+{
+  "name": "github2aws",
+  "version": "1.0.0",
+  "description": "Migrate repositories from GitHub to AWS CodeCommit",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "github",
+    "aws",
+    "migrate",
+    "migration",
+    "clone",
+    "mirror",
+    "copy",
+    "archive",
+    "repository",
+    "amazon"
+  ],
+  "author": "Japh",
+  "license": "MIT"
+}
