@@ -11,12 +11,16 @@ var program = require('commander')
   , local = path.join.bind(path, __dirname)
   , co = require('co')
   , prompt = require('co-prompt')
-  , ora = require('ora');
+  , ora = require('ora')
+  , shell = require('shelljs');
 
 var Clone = Git.Clone;
 var Cred = Git.Cred;
 
+var codecommitData = null;
 var githubPassphrase = null;
+
+var errorCollection = [];
 
 var spinner = ora();
 
@@ -27,7 +31,6 @@ program
   .option('-p,--public-key <public-key>', 'public key path for GitHub access')
   .option('-k,--private-key <private-key>', 'private key path for GitHub access')
   .action(function(repoUrl, repoDescription) {
-    var deferred = Q.defer();
     var repoParts = repoUrl.split('/');
     var repoSubParts = repoParts[1].split('.');
     repoSubParts = repoSubParts.slice(0,repoSubParts.length - 1);
@@ -41,7 +44,6 @@ program
       console.log( 'Description: "%s"', colors.green(repoDescription) );
     }
     console.log();
-    console.log('Begin:');
 
     repoParams = {};
     repoParams.repositoryName = repo;
@@ -49,45 +51,72 @@ program
       repoParams.repositoryDescription = repoDescription;
     }
 
-    spinner.text = 'Creating CodeCommit repository...';
-    spinner.start();
-    codecommit.createRepository( repoParams, function(err, data) {
-      spinner.stop();
-      if ( err ) {
-        console.error( 'Repository: %s.', colors.red('Failed') );
-        deferred.reject( err );
-      } else {
-        console.log( 'Repository: %s.', colors.green('Created') );
+    co(function *() {
+      console.log('Begin:');
+    })
+    .then(function() {
+      var deferred = Q.defer();
 
-        githubPassphrase = '';
-        var options = {
-          fetchOpts: {
-            callbacks: {
-              credentials: function(url, userName) {
-                return Cred.sshKeyNew( userName, local( program.publicKey ), local( program.privateKey ), githubPassphrase );
+      spinner.text = 'Creating CodeCommit repository...';
+      spinner.start();
+      codecommit.createRepository( repoParams, function(err, data) {
+        spinner.stop();
+        codecommitData = data;
+        if ( err ) {
+          console.error( '  Repository: %s.', colors.red('Failed') );
+          deferred.reject( err );
+        } else {
+          console.log( '  Repository: %s.', colors.green('Created') );
+
+          githubPassphrase = '';
+          var options = {
+            fetchOpts: {
+              mirror: true,
+              callbacks: {
+                credentials: function(url, userName) {
+                  return Cred.sshKeyNew( userName, local( program.publicKey ), local( program.privateKey ), githubPassphrase );
+                }
               }
             }
-          }
-        };
+          };
 
-        spinner.text = 'Cloning GitHub repository...';
-        spinner.start();
-        Clone.clone( repoUrl, './' + migrationId, options )
-          .then(function( repository ) {
-            spinner.stop();
-            console.log( 'Clone: %s.', colors.green('Successful') );
-            deferred.resolve( data );
-          })
-          .catch(function( err ) {
-            spinner.stop();
-            console.error( 'Cloning: %s', colors.red(err) );
+          spinner.text = 'Cloning GitHub repository...';
+          spinner.start();
+
+          var gitExec = shell.exec('git clone --quiet --mirror ' + repoUrl + ' ./' + migrationId, { async: true } );
+          var gitOutput = [];
+          var gitError = [];
+          gitExec.stdout.on('data', function(data) {
+            gitOutput.push(data);
           });
-      }
-    } );
+          gitExec.stderr.on('data', function(data) {
+            gitError.push(data);
+          });
+          gitExec.on('close', function(code) {
+            if ( code > 0 ) {
+              spinner.stop();
+              console.log('  Clone: %s [%s]', colors.red('Failed'), colors.red.bold(code));
+              deferred.reject(code);
+            } else {
+              spinner.stop();
+              console.log('  Clone: %s [%s]', colors.green('Successful'), migrationId);
+              deferred.resolve(codecommitData);
+            }
+          });
+        }
+      } );
 
-    console.log();
+      return deferred.promise;
+    })
+    .then(function(data) {
 
-    return deferred.promise;
+      //console.log(codecommitData);
+      //console.log(migrationId);
+    })
+    .then(function () {
+      console.log('Done.');
+      process.exit();
+    });
   })
   .on('--help', function() {
     console.log('  Examples:');
