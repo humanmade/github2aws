@@ -67,7 +67,7 @@ program
           spinner.text = 'Cloning GitHub repository...';
           spinner.start();
 
-          var gitExec = shell.exec('git --quiet clone --mirror ' + repoUrl + ' ./' + migrationId, { async: true } );
+          var gitExec = shell.exec('git clone --quiet --mirror ' + repoUrl + ' ./' + migrationId, { async: true } );
           var gitOutput = [];
           var gitError = [];
           gitExec.stdout.on('data', function(data) {
@@ -97,7 +97,7 @@ program
 
       spinner.text = 'Pushing repository to CodeCommit...';
       spinner.start();
-      var pushExec = shell.exec('cd ' + migrationId + '; git --quiet push ' + codecommitData.repositoryMetadata.cloneUrlSsh + ' --all', { async: true } );
+      var pushExec = shell.exec('cd ' + migrationId + '; git push --quiet ' + codecommitData.repositoryMetadata.cloneUrlSsh + ' --all', { async: true } );
       var gitOutput = [];
       var gitError = [];
       pushExec.stdout.on('data', function(data) {
