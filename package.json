@@ -1,8 +1,11 @@
 {
   "name": "github2aws",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Migrate repositories from GitHub to AWS CodeCommit",
   "main": "app.js",
+  "bin": {
+    "github2aws": "./github2aws"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,5 +22,17 @@
     "amazon"
   ],
   "author": "Japh",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.3.7",
+    "co": "^4.6.0",
+    "co-prompt": "^1.0.0",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "log-update": "^1.0.2",
+    "node-uuid": "^1.4.7",
+    "nodegit": "^0.12.2",
+    "ora": "^0.2.1",
+    "q": "^1.4.1"
+  }
 }
