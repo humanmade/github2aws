@@ -120,8 +120,33 @@ program
 
       return deferred.promise;
     })
-    .then(function(dd) {
-      //console.log(dd);
+    .then(function(data) {
+      var deferred = Q.defer();
+
+      spinner.text = 'Cleaning up local copy...';
+      spinner.start();
+      var rmExec = shell.exec('rm -rf ./' + migrationId, { async: true } );
+      var gitOutput = [];
+      var gitError = [];
+      rmExec.stdout.on('data', function(data) {
+        gitOutput.push(data);
+      });
+      rmExec.stderr.on('data', function(data) {
+        gitError.push(data);
+      });
+      rmExec.on('close', function(code) {
+        if ( code > 0 ) {
+          spinner.stop();
+          console.log('  Clean up: %s [%s]', colors.red('Failed'), colors.red.bold(code));
+          deferred.reject(code);
+        } else {
+          spinner.stop();
+          console.log('  Clean up: %s [%s]', colors.green('Successful'), migrationId);
+          deferred.resolve(codecommitData);
+        }
+      });
+
+      return deferred.promise;
     })
     .then(function () {
       console.log('Done.');
