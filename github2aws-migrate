@@ -6,16 +6,12 @@ var program = require('commander')
   , fs = require('fs')
   , AWS = require('aws-sdk')
   , Q = require('q')
-  , Git = require('nodegit')
   , path = require('path')
   , local = path.join.bind(path, __dirname)
   , co = require('co')
   , prompt = require('co-prompt')
   , ora = require('ora')
   , shell = require('shelljs');
-
-var Clone = Git.Clone;
-var Cred = Git.Cred;
 
 var codecommitData = null;
 var githubPassphrase = null;
@@ -67,18 +63,6 @@ program
           deferred.reject( err );
         } else {
           console.log( '  Repository: %s.', colors.green('Created') );
-
-          githubPassphrase = '';
-          var options = {
-            fetchOpts: {
-              mirror: true,
-              callbacks: {
-                credentials: function(url, userName) {
-                  return Cred.sshKeyNew( userName, local( program.publicKey ), local( program.privateKey ), githubPassphrase );
-                }
-              }
-            }
-          };
 
           spinner.text = 'Cloning GitHub repository...';
           spinner.start();
