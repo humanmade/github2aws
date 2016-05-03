@@ -67,7 +67,7 @@ program
           spinner.text = 'Cloning GitHub repository...';
           spinner.start();
 
-          var gitExec = shell.exec('git clone --quiet --mirror ' + repoUrl + ' ./' + migrationId, { async: true } );
+          var gitExec = shell.exec('git --quiet clone --mirror ' + repoUrl + ' ./' + migrationId, { async: true } );
           var gitOutput = [];
           var gitError = [];
           gitExec.stdout.on('data', function(data) {
@@ -93,9 +93,35 @@ program
       return deferred.promise;
     })
     .then(function(data) {
+      var deferred = Q.defer();
 
-      //console.log(codecommitData);
-      //console.log(migrationId);
+      spinner.text = 'Pushing repository to CodeCommit...';
+      spinner.start();
+      var pushExec = shell.exec('cd ' + migrationId + '; git --quiet push ' + codecommitData.repositoryMetadata.cloneUrlSsh + ' --all', { async: true } );
+      var gitOutput = [];
+      var gitError = [];
+      pushExec.stdout.on('data', function(data) {
+        gitOutput.push(data);
+      });
+      pushExec.stderr.on('data', function(data) {
+        gitError.push(data);
+      });
+      pushExec.on('close', function(code) {
+        if ( code > 0 ) {
+          spinner.stop();
+          console.log('  Push: %s [%s]', colors.red('Failed'), colors.red.bold(code));
+          deferred.reject(code);
+        } else {
+          spinner.stop();
+          console.log('  Push: %s [%s]', colors.green('Successful'), migrationId);
+          deferred.resolve(codecommitData);
+        }
+      });
+
+      return deferred.promise;
+    })
+    .then(function(dd) {
+      //console.log(dd);
     })
     .then(function () {
       console.log('Done.');
