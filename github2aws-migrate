@@ -141,7 +141,7 @@ program
           deferred.reject(code);
         } else {
           spinner.stop();
-          console.log('  Clean up: %s [%s]', colors.green('Successful'), migrationId);
+          console.log('  Clean up: %s', colors.green('Successful'));
           deferred.resolve(codecommitData);
         }
       });
