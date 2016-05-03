@@ -113,7 +113,7 @@ program
           deferred.reject(code);
         } else {
           spinner.stop();
-          console.log('  Push: %s [%s]', colors.green('Successful'), migrationId);
+          console.log('  Push: %s', colors.green('Successful'));
           deferred.resolve(codecommitData);
         }
       });
