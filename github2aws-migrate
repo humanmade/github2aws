@@ -123,6 +123,34 @@ program
     .then(function(data) {
       var deferred = Q.defer();
 
+      spinner.text = 'Pushing tags to CodeCommit...';
+      spinner.start();
+      var pushExec = shell.exec('cd ' + migrationId + '; git push --quiet ' + codecommitData.repositoryMetadata.cloneUrlSsh + ' --tags', { async: true } );
+      var gitOutput = [];
+      var gitError = [];
+      pushExec.stdout.on('data', function(data) {
+        gitOutput.push(data);
+      });
+      pushExec.stderr.on('data', function(data) {
+        gitError.push(data);
+      });
+      pushExec.on('close', function(code) {
+        if ( code > 0 ) {
+          spinner.stop();
+          console.log('  Tags: %s [%s]', colors.red('Failed'), colors.red.bold(code));
+          deferred.reject(code);
+        } else {
+          spinner.stop();
+          console.log('  Tags: %s', colors.green('Successful'));
+          deferred.resolve(codecommitData);
+        }
+      });
+
+      return deferred.promise;
+    })
+    .then(function(data) {
+      var deferred = Q.defer();
+
       spinner.text = 'Cleaning up local copy...';
       spinner.start();
       var rmExec = shell.exec('rm -rf ./' + migrationId, { async: true } );
