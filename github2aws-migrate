@@ -1,0 +1,103 @@
+#!/usr/bin/env node
+
+var program = require('commander')
+  , colors = require('colors')
+  , uuid = require('node-uuid')
+  , fs = require('fs')
+  , AWS = require('aws-sdk')
+  , Q = require('q')
+  , Git = require('nodegit')
+  , path = require('path')
+  , local = path.join.bind(path, __dirname)
+  , co = require('co')
+  , prompt = require('co-prompt')
+  , ora = require('ora');
+
+var Clone = Git.Clone;
+var Cred = Git.Cred;
+
+var githubPassphrase = null;
+
+var spinner = ora();
+
+program
+  .usage('migrate [options] <repo-url> [repo-description]')
+  .description('migrate GitHub repo to AWS CodeCommit')
+  .arguments('<repo-url> [repo-description]')
+  .option('-p,--public-key <public-key>', 'public key path for GitHub access')
+  .option('-k,--private-key <private-key>', 'private key path for GitHub access')
+  .action(function(repoUrl, repoDescription) {
+    var deferred = Q.defer();
+    var repoParts = repoUrl.split('/');
+    var repoSubParts = repoParts[1].split('.');
+    repoSubParts = repoSubParts.slice(0,repoSubParts.length - 1);
+    var repo = repoSubParts.join('.');
+    var migrationId = uuid.v4();
+    var codecommit = new AWS.CodeCommit({region:'us-east-1'});
+
+    console.log();
+    console.log('Migrating: ' + colors.green.bold(repo));
+    if ( repoDescription ) {
+      console.log( 'Description: "%s"', colors.green(repoDescription) );
+    }
+    console.log();
+    console.log('Begin:');
+
+    repoParams = {};
+    repoParams.repositoryName = repo;
+    if ( repoDescription ) {
+      repoParams.repositoryDescription = repoDescription;
+    }
+
+    spinner.text = 'Creating CodeCommit repository...';
+    spinner.start();
+    codecommit.createRepository( repoParams, function(err, data) {
+      spinner.stop();
+      if ( err ) {
+        console.error( 'Repository: %s.', colors.red('Failed') );
+        deferred.reject( err );
+      } else {
+        console.log( 'Repository: %s.', colors.green('Created') );
+
+        githubPassphrase = '';
+        var options = {
+          fetchOpts: {
+            callbacks: {
+              credentials: function(url, userName) {
+                return Cred.sshKeyNew( userName, local( program.publicKey ), local( program.privateKey ), githubPassphrase );
+              }
+            }
+          }
+        };
+
+        spinner.text = 'Cloning GitHub repository...';
+        spinner.start();
+        Clone.clone( repoUrl, './' + migrationId, options )
+          .then(function( repository ) {
+            spinner.stop();
+            console.log( 'Clone: %s.', colors.green('Successful') );
+            deferred.resolve( data );
+          })
+          .catch(function( err ) {
+            spinner.stop();
+            console.error( 'Cloning: %s', colors.red(err) );
+          });
+      }
+    } );
+
+    console.log();
+
+    return deferred.promise;
+  })
+  .on('--help', function() {
+    console.log('  Examples:');
+    console.log();
+    console.log('    $ ./github2aws migrate git@github.com:yourusername/your-repo-name.git');
+    console.log();
+  });
+
+program.parse(process.argv);
+
+if ( ! program.args.length ) {
+  program.help();
+}
