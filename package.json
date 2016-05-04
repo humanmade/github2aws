@@ -19,7 +19,8 @@
     "copy",
     "archive",
     "repository",
-    "amazon"
+    "amazon",
+    "codecommit"
   ],
   "author": "Japh",
   "license": "MIT",
