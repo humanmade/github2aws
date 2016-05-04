@@ -1,7 +1,7 @@
 {
   "name": "github2aws",
   "version": "0.0.1",
-  "description": "Migrate repositories from GitHub to AWS CodeCommit",
+  "description": "CLI tool to migrate repositories from GitHub to AWS CodeCommit",
   "main": "app.js",
   "bin": {
     "github2aws": "./github2aws"
