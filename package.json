@@ -1,13 +1,21 @@
 {
   "name": "github2aws",
   "version": "0.0.1",
+  "preferGlobal": "true",
   "description": "CLI tool to migrate repositories from GitHub to AWS CodeCommit",
-  "main": "app.js",
+  "main": "github2aws",
   "bin": {
     "github2aws": "./github2aws"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/humanmade/github2aws"
+  },
+  "bugs": {
+    "url": "https://github.com/humanmade/github2aws/issues"
   },
   "keywords": [
     "github",
